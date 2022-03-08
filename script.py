@@ -13,7 +13,7 @@ ap.add_argument("--year", type=int, required=False,
 ap.add_argument("--month", type=int, required=False,
                 default=None, help="Month")
 ap.add_argument("--outname", type=str, required=False,
-                default=None, help="Output Filename (defaults to YEAR_MONTH.csv)")
+                default=None, help="Output Filename (defaults to YEAR_MONTH.xlsx)")
 args = ap.parse_args()
 
 
@@ -81,6 +81,9 @@ Articles.set_index('ticket_id',inplace=True)
 Times['created_at'] =  pd.to_datetime(Times['created_at'])
 Articles['created_at'] =  pd.to_datetime(Articles['created_at'])
 
+Articles['created_at'] = Articles['created_at'].dt.tz_localize(None)
+Times['created_at'] = Times['created_at'].dt.tz_localize(None)
+
 output = pd.merge_asof(
     Times.sort_values('created_at'),
     Articles.sort_values('created_at'),
@@ -91,7 +94,10 @@ output = pd.merge_asof(
 
 
 if args.outname is None:
-  args.outname = "%i_%i.csv" % (args.year, args.month)
+  args.outname = "%i_%i.xlsx" % (args.year, args.month)
 
 print("Saving to %s" % args.outname)
-output.to_csv(args.outname)
+if args.outname.endswith('xlsx'):
+  output.to_excel(args.outname)
+else:
+  output.to_csv(args.outname)
