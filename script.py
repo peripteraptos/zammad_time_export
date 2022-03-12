@@ -55,7 +55,7 @@ for ticket in result:
       'body': x['body']
     } for key, x in history['assets']['TicketArticle'].items() 
   ]
- 
+
   Times.extend(times)
   Articles.extend(articles)
  
@@ -65,6 +65,7 @@ for ticket in result:
     'customer': ticket['customer'],
     'organization': ticket['organization'],
     'ticket_agent': ticket['agent'],
+    'group_id': ticket['ticket']['group_id']
   })
 
 
