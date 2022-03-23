@@ -28,12 +28,19 @@ if(args.month is None):
 Tickets = []
 Times = []
 Articles = []
+Groups = [] 
 result = client.time_accounting.by_ticket(args.year,args.month)
 
 print("Got %i Tickets, loading times.." % len(result))
 
 for ticket in result:
   id = ticket['ticket']['id']
+  groupId = ticket['ticket']['group_id']
+  if groupId not in [x['group_id'] for x in Groups]:
+    print("Loading group %i for ticket %i" % (groupId, id))
+    group = client.group.find(groupId)
+    Groups.append({'group_name': group['name'], 'group_id': groupId})
+
   print("Loading times for ticket %i" % id)
   history = client.ticket_history.find(id)
   times = [
@@ -58,14 +65,15 @@ for ticket in result:
 
   Times.extend(times)
   Articles.extend(articles)
- 
   Tickets.append({
     'ticket_id': id,
+    'number': ticket['ticket']['number'],
     'ticket_title': ticket['ticket']['title'],
     'customer': ticket['customer'],
     'organization': ticket['organization'],
     'ticket_agent': ticket['agent'],
-    'group_id': ticket['ticket']['group_id']
+    'group_id': ticket['ticket']['group_id'],
+    'owner_id': ticket['ticket']['owner_id']
   })
 
 
@@ -78,6 +86,8 @@ Times.set_index('ticket_id',inplace=True)
 Articles =  pd.DataFrame(Articles)
 Articles.set_index('ticket_id',inplace=True)
 
+Groups = pd.DataFrame(Groups)
+Groups.set_index('group_id', inplace=True)
 
 Times['created_at'] =  pd.to_datetime(Times['created_at'])
 Articles['created_at'] =  pd.to_datetime(Articles['created_at'])
@@ -91,7 +101,7 @@ output = pd.merge_asof(
     on="created_at",
     direction="backward",
     tolerance=pd.Timedelta(10, "s"),
-    by='ticket_id').set_index('ticket_id').join(Tickets, rsuffix='_r')
+    by='ticket_id').set_index('ticket_id').join(Tickets, rsuffix='_r').set_index('group_id').join(Groups)
 
 
 if args.outname is None:
